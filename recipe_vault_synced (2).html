@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🥗 Zain & Nazu's Recipe Vault - Synced</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 2.5em;
+        }
+        
+        .logo-text h1 {
+            font-size: 1.5em;
+            color: #333;
+        }
+        
+        .logo-text p {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .sync-status {
+            background: #00b894;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .sync-indicator {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .recipes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        
+        .recipe-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .recipe-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .recipe-image {
+            height: 200px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+        }
+        
+        .recipe-content {
+            padding: 25px;
+        }
+        
+        .recipe-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .recipe-meta {
+            display: flex;
+            gap: 15px;
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: white;
+        }
+        
+        .spinner {
+            font-size: 3em;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🍳</span>
+                <div class="logo-text">
+                    <h1>Zain & Nazu's Recipe Vault</h1>
+                    <p>Auto-synced • Send links to Blaze</p>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="refreshRecipes()">
+                <i class="fas fa-sync"></i>
+                Refresh
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="sync-status">
+            <span class="sync-indicator"></span>
+            <span>Synced with backend • Send recipe links to Blaze on WhatsApp</span>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner">🥗</div>
+            <p>Loading your recipes...</p>
+        </div>
+
+        <div class="recipes-grid" id="recipesGrid" style="display: none;">
+            <!-- Recipes loaded from backend -->
+        </div>
+    </div>
+
+    <script>
+        // Backend API URL - Update this when deployed
+        const API_URL = 'http://YOUR_SERVER_IP:8000/api/recipes';
+        
+        let recipes = [];
+        
+        async function loadRecipes() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('recipesGrid').style.display = 'none';
+                
+                // For now, show sample data (until backend is deployed)
+                recipes = [
+                    {
+                        id: 1,
+                        name: "Baked Feta Pasta",
+                        category: "dinner",
+                        cuisine: "mediterranean",
+                        calories: 450,
+                        cookTime: "40 mins",
+                        ingredients: ["200g feta", "500g tomatoes", "300g pasta"],
+                        method: ["Bake feta and tomatoes", "Mix with cooked pasta"],
+                        added_by: "Blaze",
+                        date_added: "2026-02-04"
+                    }
+                ];
+                
+                renderRecipes();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('recipesGrid').style.display = 'grid';
+                
+            } catch (err) {
+                console.error('Error loading recipes:', err);
+                document.getElementById('loading').innerHTML = `
+                    <p>Error loading recipes</p>
+                    <p>Send recipe links to Blaze on WhatsApp to add them</p>
+                `;
+            }
+        }
+        
+        function renderRecipes() {
+            const grid = document.getElementById('recipesGrid');
+            
+            if (recipes.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; color: white; padding: 60px;">
+                        <div style="font-size: 4em; margin-bottom: 20px;">📱</div>
+                        <h2>No recipes yet</h2>
+                        <p>Send recipe links to Blaze on WhatsApp</p>
+                        <p>Blaze will extract ingredients, steps, and add them here automatically</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = recipes.map(recipe => `
+                <div class="recipe-card">
+                    <div class="recipe-image">🥗</div>
+                    <div class="recipe-content">
+                        <h3 class="recipe-title">${recipe.name}</h3>
+                        <div class="recipe-meta">
+                            <span>⏱️ ${recipe.cookTime}</span>
+                            <span>🔥 ${recipe.calories} cal</span>
+                            <span>📅 ${recipe.date_added}</span>
+                        </div>
+                        <p style="color: #888; font-size: 0.9em;">
+                            Added by: ${recipe.added_by || 'Blaze'}
+                        </p>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function refreshRecipes() {
+            loadRecipes();
+        }
+        
+        // Load on page open
+        loadRecipes();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadRecipes, 30000);
+    </script>
+</body>
+</html>
